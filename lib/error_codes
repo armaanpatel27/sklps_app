@@ -1,0 +1,46 @@
+File contains error codes returned to user for troubleshooting
+
+#1000 --> error retrieving data from snapshot in User Authentication screen
+            -located in wrapper.dart
+#1001 --> snapshot error in FutureBuilder from verifyEmail() function(in verify_user.dart)
+            -located in verify_screen.dart
+#1002 --> error after snapshot data is loaded not captured by snapshot.error in verifyEmail() FutureBuilder
+            -located in verify_screen.dart
+#1003 --> error in verifyEmail() FutureBuilder where data is neither completed or is loaded
+            -located in verify_screen.dart
+#1004 --> error sending email verification link to user on sendEmailVerification()
+            -located in send_Email.dart
+#1005 --> error in FutureBuilder where setUid function was unsuccessful (in verify_user)
+            -located in verify_screen.dart
+#1006 --> snapshot error in FutureBuilder from setUid() function(in verify_user.dart)
+                      -located in verify_screen.dart
+#1007 --> error after snapshot data is loaded not captured by snapshot.error in setUid() FutureBuilder
+                      -located in verify_screen.dart
+#1008 --> error in setUid FutureBuilder where data is neither completed or is loaded
+                      -located in verify_screen.dart
+#1009 --> snapshot error in FutureBuilder from verifyAdmin() function(in verify_user.dart)
+                      -located in admin_verify_screen.dart
+#1010 --> error after snapshot data is loaded not captured by snapshot.error in verifyAdmin() FutureBuilder
+                      -located in admin_verify_screen.dart
+#1011 --> error in verifyAdmin() FutureBuilder where data is neither completed or is loaded
+                      -located in admin_verify_screen.dart
+#1012 --> error searching FireStore database in performSearch() function
+                      -located in admin_search.dart or search.dart
+#1013 --> error updating fields in FireStore document when submitting changes in submitChanges() function
+                      -located in admin_search.dart
+#1014 --> error updating accountExists field in verifyAdmin() FutureBuilder
+                      -located in verify_screen.dart
+#1015 --> error in reauthenticating when calling deleteAccount()(auth.dart), or could be issue updating User field in FireStore or resetUserData()
+                      -located in account.dart
+#1016 --> error in updating user email when calling changeEmail()(auth.dart) or error in reauthenticating user
+                      -located in account.dart
+#1017 --> error adding user when calling addDocument()(access_data.dart)
+                      -located in custom_dialog_box.dart
+#1018 --> error launching phone URL in admin_search or search
+                      -located in search_helper.dart
+#1019 --> error launching email URL in admin_search or search
+                      -located in search_helper.dart
+#1020 --> error retrieving announcement data from Announcement collection is initializeAnnouncementList method
+                      -located in admin_announcements
+#1021 --> error deleting document from Announcement collection
+                      -located in admin_announcements
