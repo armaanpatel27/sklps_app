@@ -29,6 +29,7 @@ class UserData{
   static String child4 = "";
   static String child5 = "";
   static bool accountExists = false;
+  static bool isAdmin = false;
 
   static bool isEmpty(){
     if(uid == " " && membersPublicId == " "){
@@ -58,6 +59,7 @@ class UserData{
     child4 = mapData["child4"];
     child5 = mapData["child5"];
     accountExists = mapData["accountExists"];
+    isAdmin = mapData["isAdmin"] == true;
     father = mapData["father"];
     mother = mapData["mother"];
   }
@@ -79,6 +81,7 @@ class UserData{
     child4  = "";
     child5  = "";
     accountExists = false;
+    isAdmin = false;
     father = "";
     mother = "";
   }

@@ -15,6 +15,7 @@ class SearchHelper {
   SearchHelper({this.resetUI});
   AccessData accessData = AccessData();
   CustomDialogBox dialogBox = CustomDialogBox();
+  final _firestoreRef = FirebaseFirestore.instance;
 
 
   //stores all of the Users returned by user search as a map containing the user's data
@@ -73,8 +74,12 @@ class SearchHelper {
         UserData.address = newAddress.trim();
       }
     if(newEmail != "notUsed" && newEmail != "${returnedUsersMap[currentIndex]["email"]}"){
+      String oldEmail = "${returnedUsersMap[currentIndex]["email"]}";
+      bool currentIsAdmin = returnedUsersMap[currentIndex]["isAdmin"] == true;
       await accessData.updateField("membersPublic", docID, "email", newEmail.trim());
       UserData.email = newEmail.trim();
+      await _firestoreRef.collection("memberEmails").doc(oldEmail).delete();
+      await _firestoreRef.collection("memberEmails").doc(newEmail.trim()).set({"isAdmin": currentIsAdmin});
     }
     if(newPhoneNumber != "notUsed" && newPhoneNumber != "${returnedUsersMap[currentIndex]["phoneNumber"]}"){
       await accessData.updateField("membersPublic", docID, "phoneNumber", newPhoneNumber.trim());
@@ -186,7 +191,7 @@ class SearchHelper {
                         height: SizeConfig.safeBlockVertical * 33,
                         //allows Table to be scrollable
                         child: Scrollbar(
-                          isAlwaysShown: true,
+                          thumbVisibility: true,
                           child: ListView(
                             children: [
                               Table(
@@ -497,7 +502,7 @@ class SearchHelper {
                     height: SizeConfig.safeBlockVertical * 33,
                     //allows Table to be scrollable
                     child: Scrollbar(
-                      isAlwaysShown: true,
+                      thumbVisibility: true,
                       child: ListView(
                         children: [
                           Table(

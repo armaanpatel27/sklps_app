@@ -299,7 +299,7 @@ class _AccountState extends State<Account> {
                       //sets up scrollable container that displays User info
                       child: Scrollbar(
                         controller: scrollController,
-                        isAlwaysShown: true,
+                        thumbVisibility: true,
 
                         //builds a listTile for each Map in accountInfo(each Map is one piece of data)
                         child: ListView.builder(

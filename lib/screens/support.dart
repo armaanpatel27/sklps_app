@@ -160,7 +160,7 @@ class _SupportState extends State<Support> {
                                 sizeMultiplier: 2.5,
                               ),
                               style: ElevatedButton.styleFrom(
-                                primary: Colors.blue,
+                                backgroundColor: Colors.blue,
                                 fixedSize: Size(SizeConfig.safeBlockHorizontal * 30,
                                     SizeConfig.safeBlockVertical * 6),
                               ),
@@ -178,7 +178,7 @@ class _SupportState extends State<Support> {
                                 sizeMultiplier: 2.5,
                               ),
                               style: ElevatedButton.styleFrom(
-                                primary: Colors.blue,
+                                backgroundColor: Colors.blue,
                                 fixedSize: Size(SizeConfig.safeBlockHorizontal * 30,
                                     SizeConfig.safeBlockVertical * 6),
                               ),

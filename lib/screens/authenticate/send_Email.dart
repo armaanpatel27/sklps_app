@@ -184,7 +184,7 @@ class _SendEmailState extends State<SendEmail> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                primary: Colors.blue[500],
+                                backgroundColor: Colors.blue[500],
                                 fixedSize: Size(SizeConfig.safeBlockHorizontal * 100,
                                     SizeConfig.safeBlockVertical * 6),
                               ),

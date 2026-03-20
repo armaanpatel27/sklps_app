@@ -75,7 +75,7 @@ class _ErrorScreenState extends State<ErrorScreen> {
                     height: SizeConfig.safeBlockVertical * 6,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                          primary: Colors.blue[500],
+                          backgroundColor: Colors.blue[500],
                           fixedSize: Size(SizeConfig.safeBlockHorizontal * 50,
                               SizeConfig.safeBlockVertical * 6)),
                       child: TextDefault(

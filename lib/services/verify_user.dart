@@ -9,27 +9,17 @@ class VerifyUser {
   final firestoreRef = FirebaseFirestore.instance;
   AccessData accessData = AccessData();
 
-  //returns true if email is found inside database and false otherwise
+  //returns true if email is found inside memberEmails collection and false otherwise
   Future<bool> verifyEmail(String email) async {
     try {
-      //queryEmail stores a querySnapshot --> retrieves all documents where emails match
-      final queryEmail = await firestoreRef
-          .collection("membersPublic")
-          .where("email", isEqualTo: email)
+      final doc = await firestoreRef
+          .collection("memberEmails")
+          .doc(email)
           .get();
-      print(queryEmail.docs.isEmpty);
-      //even if document doesn't exist, a JsonQuerySnapshot instance is created so we need to return false
-      if (queryEmail.docs.isEmpty) {
-        return false;
-      }
-      //if queryEmail is not empty --> contains matching email --> email exists inside database
-      else {
-        return true;
-      }
-      //if error --> throw an error handled by snapshot.error
+      return doc.exists;
     } catch (e) {
       print(e.toString());
-      throw Future.error("Encountered an error with search query stored in 'queryEmail'");
+      throw Future.error("Encountered an error with memberEmails lookup in verifyEmail");
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:sklps_app/models/User.dart';
 import 'package:sklps_app/services/access_data.dart';
@@ -70,8 +71,12 @@ class EditInfo {
         UserData.address = newAddress.trim();
       }
       if(newEmail != "notUsed" && newEmail != initialEmail){
+        String oldEmail = initialEmail;
         await accessData.updateField("membersPublic", docID, "email", newEmail.trim());
         UserData.email = newEmail.trim();
+        final firestoreRef = FirebaseFirestore.instance;
+        await firestoreRef.collection("memberEmails").doc(oldEmail).delete();
+        await firestoreRef.collection("memberEmails").doc(newEmail.trim()).set({"isAdmin": UserData.isAdmin});
       }
       if(newPhoneNumber != "notUsed" && newPhoneNumber != initialPhoneNumber){
         await accessData.updateField("membersPublic", docID, "phoneNumber", newPhoneNumber.trim());

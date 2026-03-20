@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -145,8 +146,12 @@ class _AdminAccountState extends State<AdminAccount> {
                             builder: (context) => SendEmail(
                               isNavigator: true,
                             )));
+                        String oldEmail = UserData.email;
                         AccessData().updateField("membersPublic",
                             UserData.membersPublicId, "email", newEmail);
+                        final firestoreRef = FirebaseFirestore.instance;
+                        await firestoreRef.collection("memberEmails").doc(oldEmail).delete();
+                        await firestoreRef.collection("memberEmails").doc(newEmail).set({"isAdmin": UserData.isAdmin});
                       }
                       //if firebase error --> capture it in var error
                     } on FirebaseAuthException catch (e) {
@@ -293,7 +298,7 @@ class _AdminAccountState extends State<AdminAccount> {
                       //sets up scrollable container that displays User info
                       child: Scrollbar(
                         controller: scrollController,
-                        isAlwaysShown: true,
+                        thumbVisibility: true,
 
                         //builds a listTile for each Map in accountInfo(each Map is one piece of data)
                         child: ListView.builder(

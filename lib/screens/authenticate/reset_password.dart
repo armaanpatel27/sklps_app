@@ -160,7 +160,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                             text: "Send reset link",
                           ),
                           style: ElevatedButton.styleFrom(
-                              primary: Colors.blue[500],
+                              backgroundColor: Colors.blue[500],
                               fixedSize: Size(SizeConfig.safeBlockHorizontal * 100,
                                   SizeConfig.safeBlockVertical * 6)),
                           onPressed: () {

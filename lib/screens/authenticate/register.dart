@@ -227,7 +227,7 @@ class _RegisterState extends State<Register> {
                           sizeMultiplier: 2.5,
                         ),
                         style: ElevatedButton.styleFrom(
-                          primary: Colors.blue[1000],
+                          backgroundColor: Colors.blue[1000],
                           shadowColor: Colors.black12,
                           fixedSize: Size(SizeConfig.safeBlockHorizontal * 30,
                               SizeConfig.safeBlockVertical * 6),

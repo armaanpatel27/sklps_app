@@ -86,6 +86,8 @@ class AccessData {
         "accountExists": false, "isAdmin" : false, "father": "", "mother": "",};
       //creates a new FireStore Document with auto-generated ID
       await _firestoreRef.collection("membersPublic").add(data);
+      //create memberEmails entry so the new member can register
+      await _firestoreRef.collection("memberEmails").doc(email).set({"isAdmin": false});
     } else {
       throw Exception("email-in-use");
     }
