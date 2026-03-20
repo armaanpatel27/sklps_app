@@ -2,9 +2,8 @@
 //purpose: checks authentication state and switches between sign in page or home page at any moment
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sklps_app/screens/authenticate/register.dart';
 import 'package:sklps_app/models/User.dart';
-import 'package:sklps_app/screens/authenticate/sign_in.dart';
+import 'package:sklps_app/screens/authenticate/auth_screen.dart';
 import 'package:sklps_app/screens/home/normal/home_wrapper.dart';
 import 'package:sklps_app/screens/authenticate/verify_screen.dart';
 import 'package:sklps_app/services/auth.dart';
@@ -29,7 +28,7 @@ class Wrapper extends StatelessWidget {
 
             //if user doesn't exist --> not authenticated --> SignIn screen
             //if user exists --> authenticated --> check if email is verified
-            return user == null ? SignIn() : VerifyScreen();
+            return user == null ? AuthScreen() : VerifyScreen();
           } else if (snapshot.connectionState == ConnectionState.waiting) {
             return LoadingWheel();
           } else {
