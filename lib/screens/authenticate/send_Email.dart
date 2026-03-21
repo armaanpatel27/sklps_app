@@ -1,12 +1,10 @@
-//purpose: verify email UI and contols reset email process in backend
+//purpose: verify email UI and controls reset email process in backend
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sklps_app/screens/authenticate/verify_screen.dart';
-import 'package:sklps_app/shared/constants.dart';
-import 'package:sklps_app/shared/custom_dialog_box.dart';
 import 'package:sklps_app/screens/error_screen.dart';
-import 'package:sklps_app/shared/size_config.dart';
 import '../../services/auth.dart';
 
 class SendEmail extends StatefulWidget {
@@ -19,37 +17,25 @@ class SendEmail extends StatefulWidget {
   State<SendEmail> createState() => _SendEmailState();
 }
 
-//email verification guided by https://www.youtube.com/watch?v=rTr8BUlUftg
 class _SendEmailState extends State<SendEmail> {
   final _auth = AuthService();
 
-  //keeps track of email verification through FirebaseAuth
   bool _isEmailVerified = false;
-  bool _canResendEmail = false;
+  int _countdown = 0;
   Timer? timer;
   Timer? timer2;
-  CustomDialogBox dialog = CustomDialogBox();
 
   @override
-  //checks whether this page is necessary by updating var on initialization
-  // to check if email is verified
-  //if not verified --> send email to user
-  //creates timer to check if user is verified every 5 seconds
   void initState() {
-    //accesses emailVerification status from FirebaseAuth
-    _isEmailVerified = FirebaseAuth.instance.currentUser!.emailVerified;
-    //can only send email link once every minute
-
+    _isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
 
     if (!_isEmailVerified) {
       sendEmail();
-
-      //every 5 seconds --> check if emailVerification status has been updated
+      _startCountdown();
       timer = Timer.periodic(
         const Duration(seconds: 5),
         (_) => checkIfVerified(),
       );
-
     }
     super.initState();
   }
@@ -61,170 +47,249 @@ class _SendEmailState extends State<SendEmail> {
     super.dispose();
   }
 
-  //responsible for sending User email link and controlling when email link can be sent
+  void _startCountdown() {
+    timer2?.cancel();
+    setState(() => _countdown = 30);
+    timer2 = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() => _countdown--);
+      if (_countdown <= 0) t.cancel();
+    });
+  }
+
   Future? sendEmail() async {
     try {
-      //avoids having multiple timer conflicts
-      timer2?.cancel();
-
-      final user = FirebaseAuth.instance.currentUser!;
-      //sends link to user
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
       await user.sendEmailVerification();
-      //mounted checks if state object is in the tree --> avoid "setState after dispose" error
-      if (this.mounted) {
-        setState(() {
-          _canResendEmail = false;
-        });
-
-        //every minute --> allow user to resend email
-        timer2 = Timer.periodic(Duration(seconds: 60), (timer) {setState(() {
-          _canResendEmail = true;
-        });});
-      }
     } catch (e) {
       print(e.toString());
       return ErrorScreen(errorCode: "#1004");
     }
   }
 
-//updates variable if email has been verified(being called every 5 seconds)
   Future? checkIfVerified() async {
-    //reloads state of user in FirebaseAuth
-    await FirebaseAuth.instance.currentUser!.reload();
-    if (this.mounted) {
+    await FirebaseAuth.instance.currentUser?.reload();
+    if (mounted) {
       setState(() {
-        _isEmailVerified = FirebaseAuth.instance.currentUser!.emailVerified;
+        _isEmailVerified = FirebaseAuth.instance.currentUser?.emailVerified ?? false;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    //if email is verified --> go back to VerifyScreen
-    if (_isEmailVerified == true) {
-      //when switching to new screen --> cancel timers --> avoids memory leaks
+    if (_isEmailVerified) {
       timer?.cancel();
       timer2?.cancel();
       return VerifyScreen();
-    } else {
-      return Material(
-        child: SafeArea(
-          bottom: false,
-            child: Container(
-              height: SizeConfig.safeBlockVertical * 100,
-              width: SizeConfig.safeBlockHorizontal * 100,
-              decoration: boxDecorationBackground,
+    }
+
+    final size = MediaQuery.of(context).size;
+    const kBlue = Color(0xFF1565C0);
+
+    return Scaffold(
+      backgroundColor: kBlue,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Header ───────────────────────────────────────────
+            SizedBox(
+              height: size.height * 0.32,
               child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                        SizeConfig.safeBlockHorizontal * 5,
-                        SizeConfig.safeBlockVertical * 2,
-                        SizeConfig.safeBlockHorizontal * 5,
-                        SizeConfig.safeBlockVertical * 2),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: <Widget>[
-                          //Title
-                          SizedBox(
-                            height: SizeConfig.safeBlockVertical * 6,
-                            child: TextDefault(
-                              text: "Verify your email",
-                              sizeMultiplier: 4.8,
-                              color: Colors.black,
-                              bold: FontWeight.bold,
-                            ),
-                          ),
-                          Container(
-                            height: SizeConfig.safeBlockVertical * 5,
-                          ),
-                          //Subtitle
-                          SizedBox(
-                            height: SizeConfig.safeBlockVertical * 7,
-                            child: TextDefault(
-                              text:
-                                  "Just follow the instructions in the email we sent you",
-                              sizeMultiplier: 2.2,
-                              color: Colors.grey[600]!,
-                              align: TextAlign.center,
-                            ),
-                          ),
-                          Container(
-                            height: SizeConfig.safeBlockVertical * 17,
-                          ),
-                          //Email Icon in middle
-                          SizedBox(
-                            height: SizeConfig.safeBlockVertical * 25,
-                            child: Icon(
-                              Icons.email_outlined,
-                              size: SizeConfig.safeBlockVertical * 25,
-                              color: Colors.blue[500],
-                            ),
-                          ),
-                          Container(
-                            height: SizeConfig.safeBlockVertical * 17,
-                          ),
-                          //Resend email button
-                          SizedBox(
-                            height: SizeConfig.safeBlockVertical * 6,
-                            child: ElevatedButton(
-                              child: TextDefault(
-                                text: "Didn't recieve an email? Click here!",
-                                color: Colors.white,
-                                sizeMultiplier: 2.5,
-                              ),
-                              onPressed: () {
-                                if (_canResendEmail) {
-                                  sendEmail();
-                                  dialog.showCustomDialogBox(
-                                      "Email sent successfully", context);
-                                } else {
-                                  dialog.showCustomDialogBox(
-                                      "Email has already been sent. Please wait about a minute before trying again.",
-                                      context);
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue[500],
-                                fixedSize: Size(SizeConfig.safeBlockHorizontal * 100,
-                                    SizeConfig.safeBlockVertical * 6),
-                              ),
-                              autofocus: true,
-                            ),
-                          ),
-                          Container(
-                            height: SizeConfig.safeBlockVertical * 3,
-                          ),
-                          SizedBox(
-                            height: SizeConfig.safeBlockVertical * 6,
-                            child: TextButton(
-                              child: TextDefault(
-                                text: "Sign Out",
-                                sizeMultiplier: 2.5,
-                                color: Colors.black,
-                                decoration: TextDecoration.underline,
-                                bold: FontWeight.bold,
-                              ),
-                              onPressed: () async {
-                                //when switching to new screen --> cancel timers --> avoids memory leaks
-                                timer?.cancel();
-                                timer2?.cancel();
-                                //if Navigator --> pop
-                                //otherwise --> signOut
-                                if (widget.isNavigator) {
-                                  Navigator.of(context).pop();
-                                }
-                                await _auth.signOut();
-                              },
-                              autofocus: true,
-                            ),
-                          ),
-                        ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.mark_email_unread_outlined,
+                          size: 48,
+                          color: kBlue,
+                        ),
                       ),
                     ),
-                  )),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Verify your email',
+                      style: GoogleFonts.inter(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+
+            // ── White card ────────────────────────────────────────
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    size.width * 0.07,
+                    size.height * 0.04,
+                    size.width * 0.07,
+                    size.height * 0.04,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Check your inbox',
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A1A2E),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'We sent a verification link to\n${FirebaseAuth.instance.currentUser?.email ?? ''}',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Status pill
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F4FF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: kBlue.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: kBlue,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Waiting for verification…',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: kBlue,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+
+                      // Resend button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _countdown > 0
+                              ? null
+                              : () {
+                                  _startCountdown();
+                                  sendEmail();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Verification email sent!',
+                                        style: GoogleFonts.inter(),
+                                      ),
+                                      backgroundColor: kBlue,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10)),
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kBlue,
+                            disabledBackgroundColor:
+                                kBlue.withOpacity(0.6),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(
+                            _countdown > 0
+                                ? 'Resend in ${_countdown}s'
+                                : 'Resend Email',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Sign out button
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () async {
+                            timer?.cancel();
+                            timer2?.cancel();
+                            if (widget.isNavigator) {
+                              Navigator.of(context).pop();
+                            }
+                            await _auth.signOut();
+                          },
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(
+                            'Sign Out',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
   }
 }

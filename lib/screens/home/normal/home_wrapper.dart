@@ -1,11 +1,11 @@
+// ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sklps_app/screens/home/normal/account.dart';
-import 'package:sklps_app/screens/home/normal/announcements.dart';
 import 'package:sklps_app/screens/home/normal/first_page.dart';
 import 'package:sklps_app/screens/home/normal/search.dart';
-import 'package:sklps_app/shared/size_config.dart';
 
-//Bottom Navigation Guide from "https://blog.logrocket.com/how-to-build-a-bottom-navigation-bar-in-flutter/"
+const _kPrimary = Color(0xFF1565C0);
 
 class HomeWrapper extends StatefulWidget {
   const HomeWrapper({Key? key}) : super(key: key);
@@ -15,19 +15,11 @@ class HomeWrapper extends StatefulWidget {
 }
 
 class _HomeWrapperState extends State<HomeWrapper> {
-
-  //when tap on item in navigation bar --> sets current index
-  void onTap(int index){
-    setState(() {
-      currentIndex = index;
-    });
-  }
-
-  //holds value of the current index of the current page in BottomNavigationBar
   int currentIndex = 0;
 
-  //Widgets displayed in BottomNavigationBar
-  List<Widget> pages = [
+  void onTap(int index) => setState(() => currentIndex = index);
+
+  final List<Widget> pages = [
     FirstPage(),
     Search(),
     Account(),
@@ -36,57 +28,128 @@ class _HomeWrapperState extends State<HomeWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //Stack(position widget) that shows a single child from a given index
-      body: IndexedStack(
-        index: currentIndex,
-        children: pages,
+      extendBody: true,
+      body: IndexedStack(index: currentIndex, children: pages),
+      bottomNavigationBar: _FloatingNavBar(
+        currentIndex: currentIndex,
+        onTap: onTap,
       ),
-      bottomNavigationBar: Container(
-        color: Colors.blue,
-        child: SafeArea(
-          child: SizedBox(
-            height: SizeConfig.safeBlockVertical * 9.5,
-            child: BottomNavigationBar(
-              elevation: 0,
-              backgroundColor: Colors.blue,
-              currentIndex: currentIndex,
-              //changes current index depending on which item is tapped
-              onTap: onTap,
-              //displays clickable icons that can be used to navigate between pages
-              items: const <BottomNavigationBarItem>[
-                //Search page
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.announcement),
-                  label: "Announcements"
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.search),
-                  label: "Search",
-                ),
-                //Accoutn Page
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person),
-                  label: "Account",
-                ),
-              ],
+    );
+  }
+}
 
-              //Customizing icons and their behavior
-              showSelectedLabels: false,
-              showUnselectedLabels: false,
-              selectedIconTheme: IconThemeData(
-                color: Colors.black,
-                size: SizeConfig.safeBlockVertical*4.0,
-              ),
-              unselectedIconTheme: IconThemeData(
-                color: Colors.black26,
-                size: SizeConfig.safeBlockVertical*3.2,
-              ),
+// ── Floating nav bar ────────────────────────────────────────────────────────
 
-            ),
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  const _FloatingNavBar({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
+        child: Container(
+          height: 64,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                icon: Icons.campaign_outlined,
+                activeIcon: Icons.campaign_rounded,
+                label: 'Home',
+                selected: currentIndex == 0,
+                onTap: () => onTap(0),
+              ),
+              _NavItem(
+                icon: Icons.search_outlined,
+                activeIcon: Icons.search_rounded,
+                label: 'Search',
+                selected: currentIndex == 1,
+                onTap: () => onTap(1),
+              ),
+              _NavItem(
+                icon: Icons.person_outline_rounded,
+                activeIcon: Icons.person_rounded,
+                label: 'Profile',
+                selected: currentIndex == 2,
+                onTap: () => onTap(2),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+}
 
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: selected ? _kPrimary : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                selected ? activeIcon : icon,
+                color: selected ? Colors.white : Colors.grey[400],
+                size: 22,
+              ),
+            ),
+            if (selected) ...[
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  color: _kPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

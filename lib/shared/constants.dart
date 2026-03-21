@@ -10,17 +10,31 @@ class LoadingWheel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     SizeConfig().init(context);
-    return Container(
-      decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, Colors.blue[500]!],
-          )),
-      child: Center(
-        child: SpinKitFadingCircle(
-          color: Colors.black,
-          size: SizeConfig.screenHeight/10,
+    final size = MediaQuery.of(context).size;
+    return Scaffold(
+      backgroundColor: const Color(0xFF1565C0),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/images/sklps_logo.png',
+                height: size.height * 0.12,
+                width: size.height * 0.12,
+              ),
+            ),
+            const SizedBox(height: 32),
+            SpinKitThreeBounce(
+              color: Colors.white.withOpacity(0.7),
+              size: 24,
+            ),
+          ],
         ),
       ),
     );

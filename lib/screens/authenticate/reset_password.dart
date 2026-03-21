@@ -1,12 +1,15 @@
-//purpose: shows reset password UI and controls backend work + emails
+// ignore_for_file: prefer_const_constructors
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
 import 'package:firebase_auth/firebase_auth.dart';
 import "package:flutter/material.dart";
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sklps_app/services/error_handling.dart';
-import 'package:sklps_app/shared/constants.dart';
 import 'package:sklps_app/shared/custom_dialog_box.dart';
 import 'package:sklps_app/shared/size_config.dart';
 import 'package:sklps_app/shared/text_filed_validation.dart';
+
+const _kPrimary = Color(0xFF1565C0);
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({Key? key}) : super(key: key);
@@ -16,196 +19,288 @@ class ResetPasswordScreen extends StatefulWidget {
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
-  //stores user entered info and error message
   String _email = "";
   String _error = "";
-
-  bool canSendResetLink = true;
+  bool _isLoading = false;
+  bool _linkSent = false;
+  int _countdown = 0;
+  Timer? _timer;
 
   CustomDialogBox dialog = CustomDialogBox();
   ErrorHandling errorHandler = ErrorHandling();
-
-  //method that controls sending reset password link to email user from FireBase Auth
-  Future? sendLink() async {
-    try {
-      final auth.FirebaseAuth _firebaseAuth = auth.FirebaseAuth.instance;
-      await _firebaseAuth.sendPasswordResetEmail(email: _email);
-      //reveal popup to let user know that event was successful
-      dialog.showCustomDialogBox("Link sent successfully", context);
-      //prevent overflow of links
-      setState(() {
-        canSendResetLink = false;
-      });
-      //after 1 minute --> allowed to send link again
-      await Future.delayed(Duration(seconds: 60));
-      setState(() {
-        canSendResetLink = true;
-      });
-    } on FirebaseAuthException catch (e) {
-      print(e.code);
-      setState(() {
-        _error = errorHandler.errorHandling(e.code);
-      });
-    }
-  }
-
-  //controls TextFormField validation
   final TextFieldValidation _validate = TextFieldValidation();
   final _globalKey = GlobalKey<FormState>();
 
   @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startCountdown() {
+    setState(() => _countdown = 30);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() => _countdown--);
+      if (_countdown <= 0) t.cancel();
+    });
+  }
+
+  Future<void> sendLink() async {
+    setState(() {
+      _isLoading = true;
+      _error = "";
+    });
+    try {
+      final auth.FirebaseAuth firebaseAuth = auth.FirebaseAuth.instance;
+      await firebaseAuth.sendPasswordResetEmail(email: _email);
+      setState(() {
+        _linkSent = true;
+        _isLoading = false;
+      });
+      _startCountdown();
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _error = errorHandler.errorHandling(e.code);
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      child: SafeArea(
+    SizeConfig().init(context);
+    final size = MediaQuery.of(context).size;
+
+    return Scaffold(
+      backgroundColor: _kPrimary,
+      body: SafeArea(
         bottom: false,
-        child: Container(
-          height: SizeConfig.safeBlockVertical * 100,
-          width: SizeConfig.safeBlockHorizontal * 100,
-          decoration: boxDecorationBackground,
-            //Padding wraps around entire page
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                  SizeConfig.safeBlockHorizontal * 5,
-                  SizeConfig.safeBlockVertical * 2,
-                  SizeConfig.safeBlockHorizontal * 5,
-                  SizeConfig.safeBlockVertical * 2),
-              child: Form(
-                key: _globalKey,
+        child: Column(
+          children: [
+            // ── Blue header ─────────────────────────────────────────
+            SizedBox(
+              height: size.height * 0.24,
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new,
+                          color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.lock_reset_rounded,
+                            color: Colors.white,
+                            size: 36,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Reset Password',
+                          style: GoogleFonts.inter(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "We'll send a link to your email",
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: Colors.white60),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── White card ─────────────────────────────────────────
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
                 child: SingleChildScrollView(
-                  child: Column(
-                    children: <Widget>[
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 6,
-                        child: TextDefault(
-                          text: "Reset Password",
-                          sizeMultiplier: 4.8,
-                          color: Colors.black,
-                          bold: FontWeight.bold,
+                  padding: EdgeInsets.fromLTRB(size.width * 0.08,
+                      size.height * 0.045, size.width * 0.08, size.height * 0.04),
+                  child: Form(
+                    key: _globalKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Forgot your password?',
+                          style: GoogleFonts.inter(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A1A2E),
+                          ),
                         ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 5,
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 7,
-                        child: TextDefault(
-                          text:
-                              "Please enter your account email to receive the password email link",
-                          sizeMultiplier: 2.2,
-                          color: Colors.grey[600]!,
-                          align: TextAlign.center,
+                        const SizedBox(height: 6),
+                        Text(
+                          'Enter your account email and we\'ll send you a link to reset your password.',
+                          style: GoogleFonts.inter(
+                              fontSize: 14, color: Colors.grey[500], height: 1.5),
                         ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 17,
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 20,
-                        child: Icon(
-                          Icons.lock,
-                          size: SizeConfig.safeBlockVertical * 20,
-                          color: Colors.blue[500],
-                        ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 5,
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 9.5,
-                        child: TextFormField(
-                          textAlignVertical: TextAlignVertical.bottom,
-                          style:
-                              TextStyle(fontSize: SizeConfig.safeBlockVertical * 2.5),
-                          decoration: InputDecoration(
-                            hintText: "Email",
-                            errorStyle: TextStyle(
-                                fontSize: SizeConfig.safeBlockVertical * 2),
-                            helperText: "",
-                            helperStyle: TextStyle(
-                                fontSize: SizeConfig.safeBlockVertical * 2),
-                            prefixIcon: const Icon(
-                              Icons.email,
+                        SizedBox(height: size.height * 0.04),
+
+                        // ── Success state ──────────────────────────
+                        if (_linkSent)
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.green.shade200),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.check_circle_outline,
+                                    color: Colors.green.shade600, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Reset link sent! Check your inbox.',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+
+                        if (_linkSent) SizedBox(height: size.height * 0.025),
+
+                        // ── Email field ────────────────────────────
+                        TextFormField(
+                          style: GoogleFonts.inter(
+                              fontSize: 15, color: Colors.black87),
+                          keyboardType: TextInputType.emailAddress,
                           maxLines: 1,
-                          validator: (value) {
-                            //ensures that email is valid
-                            return _validate.validateEmail(value);
-                          },
-                          onChanged: (value) {
-                            //everytime user changes value --> updates variable
-                            setState(() => _email = value.trim().toLowerCase());
-                          },
+                          decoration: _inputDecoration(
+                              'Email address', Icons.email_outlined),
+                          validator: (v) => _validate.validateEmail(v?.trim()),
+                          onChanged: (v) =>
+                              setState(() => _email = v.trim().toLowerCase()),
                         ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 2,
-                        child: Text(
-                          _error,
-                          style: TextStyle(
-                            color: Colors.red[800],
-                            fontSize: SizeConfig.safeBlockVertical * 2,
+
+                        // ── Error ──────────────────────────────────
+                        if (_error.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(_error,
+                              style: TextStyle(
+                                  color: Colors.red[600], fontSize: 13)),
+                        ],
+
+                        SizedBox(height: size.height * 0.03),
+
+                        // ── Send button ────────────────────────────
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: (_isLoading || _countdown > 0)
+                                ? null
+                                : () {
+                                    if (!_globalKey.currentState!.validate()) {
+                                      setState(() => _error = "");
+                                      return;
+                                    }
+                                    sendLink();
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _kPrimary,
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor:
+                                  _countdown > 0 ? _kPrimary.withOpacity(0.6) : null,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2.5),
+                                  )
+                                : Text(
+                                    _countdown > 0
+                                        ? 'Resend in ${_countdown}s'
+                                        : _linkSent
+                                            ? 'Resend link'
+                                            : 'Send reset link',
+                                    style: GoogleFonts.inter(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white),
+                                  ),
                           ),
                         ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 4,
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 6,
-                        child: ElevatedButton(
-                          child: TextDefault(
-                            color: Colors.white,
-                            sizeMultiplier: 2.5,
-                            text: "Send reset link",
-                          ),
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[500],
-                              fixedSize: Size(SizeConfig.safeBlockHorizontal * 100,
-                                  SizeConfig.safeBlockVertical * 6)),
-                          onPressed: () {
-                            //resets error text on click
-                            if (!_globalKey.currentState!.validate()) {
-                              setState(() {
-                                _error = "";
-                              });
-                              return;
-                            }
-                            if (canSendResetLink) {
-                              sendLink();
-                            } else {
-                              dialog.showCustomDialogBox(
-                                  "Link has already been sent. Try again in 1 minute.",
-                                  context);
-                            }
-                          },
-                        ),
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 4,
-                      ),
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 6,
-                        child: TextButton(
-                          child: TextDefault(
-                            text: "Click here to go back",
-                            color: Colors.black,
-                            sizeMultiplier: 2.5,
-                            decoration: TextDecoration.underline,
-                            bold: FontWeight.bold,
-                          ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                          },
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
+          ],
         ),
       ),
+    );
+  }
+
+  InputDecoration _inputDecoration(String hint, IconData icon) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
+      prefixIcon: Icon(icon, color: Colors.grey[400], size: 20),
+      filled: true,
+      fillColor: const Color(0xFFF7F8FA),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[200]!),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _kPrimary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red[300]!),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red[300]!),
+      ),
+      errorStyle: const TextStyle(fontSize: 12),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }

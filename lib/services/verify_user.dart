@@ -27,8 +27,8 @@ class VerifyUser {
   //return boolean indicate whether process was successful or not --> handled by FutureBuilder in verify_screen
   Future<bool> setUid() async {
     try {
-      //sets User id
-      //currentUser cannot be null because user has to be verified in order to reach this page
+      // Force-refresh token so Firestore rules see email_verified == true
+      await _firebaseAuth.currentUser?.getIdToken(true);
       String userUID = _firebaseAuth.currentUser!.uid;
 
       //stores the document corresponding to the user

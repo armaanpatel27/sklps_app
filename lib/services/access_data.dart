@@ -85,9 +85,9 @@ class AccessData {
         "city": "", "email": email, "gaam": "", "name": name, "phoneNumber": "", "spouse":"", "spouseEmail" : "", "state": "","zip": "",
         "accountExists": false, "isAdmin" : false, "father": "", "mother": "",};
       //creates a new FireStore Document with auto-generated ID
-      await _firestoreRef.collection("membersPublic").add(data);
-      //create memberEmails entry so the new member can register
-      await _firestoreRef.collection("memberEmails").doc(email).set({"isAdmin": false});
+      final docRef = await _firestoreRef.collection("membersPublic").add(data);
+      //create memberEmails entry so isMember() passes when the user first logs in
+      await _firestoreRef.collection("memberEmails").doc(email).set({"isAdmin": false, "membersPublicId": docRef.id});
     } else {
       throw Exception("email-in-use");
     }

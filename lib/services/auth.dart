@@ -80,15 +80,6 @@ class AuthService{
     }
   }
 
-  Future changeEmail(email, password) async {
-      dynamic reauthenticate = await reauthenticateUser(password);
-      if(reauthenticate == true) {
-        return await _firebaseAuth.currentUser!.updateEmail(email);
-      } else {
-        throw Exception("Unexpected Error");
-      }
-    }
-
   /*Future test(email,password)async {
     print(email);
     print(password);

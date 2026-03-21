@@ -25,7 +25,9 @@ class _VerifyScreenState extends State<VerifyScreen> {
   //returns true if successful
   //otherwise returns false
   Future<bool?> verify() {
-    return VerifyUser().verifyEmail(_firebaseAuth.currentUser!.email!);
+    final email = _firebaseAuth.currentUser?.email;
+    if (email == null) return Future.value(false);
+    return VerifyUser().verifyEmail(email);
   }
 
   //function that sets fields inside UserData
@@ -39,8 +41,10 @@ class _VerifyScreenState extends State<VerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return LoadingWheel();
     //if email is verified --> update UserData and accountExists --> check if user is admin
-    if (_auth.currentUser!.emailVerified) {
+    if (currentUser.emailVerified) {
       return Container(
         decoration: boxDecorationBackground,
 

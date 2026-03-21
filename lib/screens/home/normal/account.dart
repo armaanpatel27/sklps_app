@@ -1,15 +1,16 @@
+// ignore_for_file: prefer_const_constructors
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sklps_app/models/User.dart';
 import 'package:sklps_app/services/edit_user_info.dart';
-import 'package:sklps_app/shared/constants.dart';
 import 'package:sklps_app/shared/size_config.dart';
-import '../../../services/access_data.dart';
 import '../../../services/auth.dart';
 import '../../../services/error_handling.dart';
-import '../../authenticate/send_Email.dart';
 import '../../support.dart';
+
+const _kPrimary = Color(0xFF1565C0);
 
 class Account extends StatefulWidget {
   const Account({Key? key}) : super(key: key);
@@ -19,161 +20,140 @@ class Account extends StatefulWidget {
 }
 
 class _AccountState extends State<Account> {
+  void resetUI() => setState(() {});
 
-  //rebuilds page to update UI with most recent information
-  void resetUI() {
-    setState(() {
-    });
-  }
-
-
-  //variables to store new values if requested to change
-  String newEmail = "";
   String password = "";
-
-  //holds error message
   String error = "";
 
-  //access to methods to return error strings
   ErrorHandling errorHandle = ErrorHandling();
 
-  ScrollController scrollController = ScrollController(initialScrollOffset: 0);
+  // ── Dialog for Change Email / Delete Account ─────────────────────────────
 
+  showDialogBox(String text,
+      Future<dynamic> Function(dynamic, dynamic) fun) {
+    const title = 'Delete Account';
+    const icon = Icons.delete_outline;
+    final iconBg = Colors.red.shade50;
+    final iconColor = Colors.red[600]!;
+    final btnColor = Colors.red[600]!;
+    const btnLabel = 'Delete Account';
 
-  //dialogBox handled user request to change email or delete account
-  //param bool needEmail --> adjusts content of dialogBox based on user request to change email or delete account
-  showDialogBox(String text, Future<dynamic> Function(dynamic, dynamic) fun, bool needEmail) {
     return showDialog(
       context: context,
       builder: (BuildContext context) {
-        //StateBuilder allows updates to dialogBox UI
         return StatefulBuilder(builder: (newContext, newSetState) {
           return AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-              side: const BorderSide(color: Colors.black, width: 2),
+                borderRadius: BorderRadius.circular(20)),
+            titlePadding: const EdgeInsets.fromLTRB(24, 28, 24, 0),
+            contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+            actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            title: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: iconBg, shape: BoxShape.circle),
+                  child: Icon(icon, color: iconColor, size: 28),
+                ),
+                const SizedBox(height: 14),
+                Text(title,
+                    style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: const Color(0xFF1A1A2E)),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 6),
+                Text(text,
+                    style: GoogleFonts.inter(
+                        fontSize: 13, color: Colors.grey[500]),
+                    textAlign: TextAlign.center),
+              ],
             ),
-            insetPadding: EdgeInsets.fromLTRB(
-                SizeConfig.safeBlockHorizontal * 5,
-                SizeConfig.safeBlockVertical * 2,
-                SizeConfig.safeBlockHorizontal * 5,
-                SizeConfig.safeBlockVertical * 2),
-            title: TextDefault(
-              text: "ALERT",
-              color: Colors.black,
-              sizeMultiplier: 3,
-              bold: FontWeight.bold,
-            ),
-            //Size of dialogBox depends on whether it is a changeEmail request or deleteAccount request
-            content: SizedBox(
-              height: needEmail
-                  ? SizeConfig.safeBlockVertical * 35
-                  : SizeConfig.safeBlockVertical * 25,
-              child: Column(
-                children: [
-                  TextDefault(
-                    text: text,
-                    color: Colors.black,
-                    sizeMultiplier: 2.5,
-                  ),
-                  //if emailRequest --> display another textFormField that asks for email
-                  //otherwise --> sizedBox(empty space)
-                  needEmail
-                      ? TextFormField(
-                          style: TextStyle(
-                              fontSize: SizeConfig.safeBlockVertical * 2.5),
-                          decoration: InputDecoration(
-                            hintText: "Email",
-                            errorStyle: TextStyle(
-                                fontSize: SizeConfig.safeBlockVertical * 1.5),
-                            helperText: "",
-                            helperStyle: TextStyle(
-                                fontSize: SizeConfig.safeBlockVertical * 1.5),
-                          ),
-                          maxLines: 1,
-                          //sets newEmail to text in textFormField on change
-                          onChanged: (value) {
-                            setState(() => newEmail = value.trim().toLowerCase());
-                          },
-                        )
-                      : SizedBox(height: 0),
-                  //Password input box
-                  TextFormField(
-                    style:
-                        TextStyle(fontSize: SizeConfig.safeBlockVertical * 2.5),
-                    decoration: InputDecoration(
-                      hintText: "Password",
-                      errorStyle: TextStyle(
-                          fontSize: SizeConfig.safeBlockVertical * 1.5),
-                      helperText: "",
-                      helperStyle: TextStyle(
-                          fontSize: SizeConfig.safeBlockVertical * 1.5),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _DialogField(
+                  hint: 'Password',
+                  icon: Icons.lock_outline,
+                  obscure: true,
+                  onChanged: (v) => setState(() => password = v.trim()),
+                ),
+                if (error.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    obscureText: true,
-                    maxLines: 1,
-                    //on change updates password with value in textFormField
-                    onChanged: (value) {
-                      setState(() => password = value.trim());
-                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline,
+                            size: 14, color: Colors.red[600]),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(error,
+                              style: TextStyle(
+                                  color: Colors.red[600], fontSize: 12)),
+                        ),
+                      ],
+                    ),
                   ),
-                  //Error Text
-                  TextDefault(
-                      text: error, sizeMultiplier: 2, color: Colors.red),
+                ],
+              ],
+            ),
+            actions: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      style: TextButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        newSetState(() => error = '');
+                      },
+                      child: Text('Cancel',
+                          style: GoogleFonts.inter(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: btnColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
+                      onPressed: () async {
+                        try {
+                          await fun(null, password);
+                          Navigator.of(context).pop();
+                        } on FirebaseAuthException catch (e) {
+                          newSetState(() =>
+                              error = errorHandle.errorHandling(e.code));
+                        } catch (e) {
+                          newSetState(() {
+                            error = 'Error #1015. Please try again later';
+                          });
+                        }
+                      },
+                      child: Text(btnLabel,
+                          style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600, fontSize: 14)),
+                    ),
+                  ),
                 ],
               ),
-            ),
-            actions: <Widget>[
-              //cancel Button --> removes DialogBox --> back to Account Page
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  newSetState(() {
-                    error = "";
-                  });
-                },
-                child: TextDefault(
-                  text: "Cancel",
-                  color: Colors.blue,
-                  sizeMultiplier: 2.5,
-                ),
-              ),
-              //Confirm email change or to delete account --> function is passed as argument to dialogBox
-              TextButton(
-                  onPressed: () async {
-                    try {
-                      //if function succeeds --> close dialog box
-                      await fun(newEmail, password);
-                      Navigator.of(context).pop();
-                      //if emailChange request --> go to email verification page and update email field
-                      if (needEmail) {
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => SendEmail(
-                              isNavigator: true,
-                            )));
-                        AccessData().updateField("membersPublic",
-                            UserData.membersPublicId, "email", newEmail);
-                      }
-                      //if firebase error --> capture it in var error
-                    } on FirebaseAuthException catch (e) {
-                      newSetState(() {
-                        error = errorHandle.errorHandling(e.code);
-                      });
-                      //if any other error --> display error message
-                    } catch (e) {
-                      newSetState(() {
-                        if(!needEmail) {
-                          error = "Error #1015. Please try again later";
-                        } else {
-                          error = "Error #1016. Please try again later";
-                        }
-                      });
-                    }
-                  },
-                  child: TextDefault(
-                    text: "Confirm",
-                    color: Colors.blue,
-                    sizeMultiplier: 2.5,
-                  )),
             ],
           );
         });
@@ -181,281 +161,383 @@ class _AccountState extends State<Account> {
     );
   }
 
+  // ── Build ────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
-    EditInfo editInfo = EditInfo(resetUI: resetUI);
+    SizeConfig().init(context);
+    final size = MediaQuery.of(context).size;
     final authService = Provider.of<AuthService>(context);
-    //holds specific user info that will be displayed on the page
-    //rebuilds on setState
-    List<Map> accountInfo = [
-      {"title": "Email", "subtitle": UserData.email},
-      {"title": "Phone Number", "subtitle": UserData.phoneNumber},
-      {"title": "Gaam", "subtitle": UserData.gaam},
-      {"title": "Street Address", "subtitle": "${UserData.address}"},
-      {"title" : "City", "subtitle": "${UserData.city}"},
-      {"title" : "State", "subtitle": "${UserData.state}"},
-      {"title" : "Zip", "subtitle": "${UserData.zip}"},
-      {"title": "Father", "subtitle": "${UserData.father}"},
-      {"title": "Mother", "subtitle": "${UserData.mother}"},
-      {"title": "Spouse", "subtitle": UserData.spouse},
-      {"title": "Child1", "subtitle": "${UserData.child1}"},
-      {"title" : "Child2", "subtitle": "${UserData.child2}"},
-      {"title" : "Child3", "subtitle": "${UserData.child3}"},
-      {"title" : "Child4", "subtitle": "${UserData.child4}"},
-      {"title" : "Child5", "subtitle": "${UserData.child5}"},
-    ];
+    final EditInfo editInfo = EditInfo(resetUI: resetUI);
+    final bool canPop = Navigator.of(context).canPop();
 
-    //whether this page is on top of a navigation stack
-    bool canPop = Navigator.of(context).canPop();
-
-    return Material(
-      child: Container(
-        color: Colors.blue[200],
-        child: SafeArea(
-          bottom: false,
-          child: SingleChildScrollView(
-            child: Container(
-              height: SizeConfig.safeBlockVertical * 90.5,
-              width: SizeConfig.safeBlockVertical * 100,
-              color: Colors.white,
-              child: Column(
+    return Scaffold(
+      backgroundColor: _kPrimary,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Blue header ───────────────────────────────────────
+            SizedBox(
+              height: size.height * 0.28,
+              child: Stack(
                 children: [
-                  //Stack allows widgets to overlap each other
-                  Stack(
-                    children: [
-                      //sets design pattern at the top of the page
-                      SizedBox(
-                        height: SizeConfig.safeBlockVertical * 25,
-                        child: ClipPath(
-                          clipper: CustomClipPath(),
-
-                          //background for clipPath
-                          child: Container(
-                            decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [Colors.blue[100]!, Colors.blue[500]!],
-                            )),
-                            height: SizeConfig.safeBlockVertical * 20,
-                          ),
+                  // Settings menu — top right
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.settings_outlined,
+                          color: Colors.white70, size: 24),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'edit':
+                            Future.delayed(Duration.zero,
+                                () => editInfo.showEditPopUp(context));
+                            break;
+                          case 'support':
+                            Future.delayed(
+                                Duration.zero,
+                                () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => Support(
+                                            dialogBox: false,
+                                            signOutButton: false))));
+                            break;
+                          case 'signout':
+                            if (canPop) Navigator.of(context).pop();
+                            authService.signOut();
+                            break;
+                          case 'delete':
+                            Future.delayed(Duration.zero, () => showDialogBox(
+                                'Enter your password to delete your account',
+                                authService.deleteAccount));
+                            break;
+                        }
+                      },
+                      itemBuilder: (_) => [
+                        _menuItem('edit', Icons.edit_outlined, 'Edit Info'),
+                        _menuItem('support', Icons.help_outline, 'Support'),
+                        _menuItem('signout', Icons.logout, 'Sign Out'),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Row(children: [
+                            Icon(Icons.delete_outline,
+                                size: 18, color: Colors.red[400]),
+                            const SizedBox(width: 10),
+                            Text('Delete Account',
+                                style: GoogleFonts.inter(
+                                    fontSize: 14, color: Colors.red[400])),
+                          ]),
                         ),
-                      ),
-                      //sets up circleIcon in the center
-                      Positioned(
-                        top: SizeConfig.safeBlockVertical * 7.2,
-                        left: SizeConfig.safeBlockHorizontal * 33,
-                        child: CircleAvatar(
-                          backgroundColor: Colors.lightBlue,
-                          radius: SizeConfig.safeBlockVertical * 8.8,
+                      ],
+                    ),
+                  ),
+                  // Avatar + name
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: size.height * 0.065,
+                          backgroundColor: Colors.white.withOpacity(0.2),
                           child: CircleAvatar(
-                            child: Icon(
-                              Icons.person,
-                              size: SizeConfig.safeBlockVertical * 15,
-                            ),
+                            radius: size.height * 0.058,
                             backgroundColor: Colors.white,
-                            radius: SizeConfig.safeBlockVertical * 8.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  //displays User's name
-                  SizedBox(
-                    height: SizeConfig.safeBlockVertical * 7.5,
-                    child: Center(
-                      child: TextDefault(
-                        text: UserData.name,
-                        sizeMultiplier: 4.3,
-                        color: Colors.black,
-                        align: TextAlign.center,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: SizeConfig.safeBlockVertical * 4,
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(SizeConfig.safeBlockHorizontal * 3, 0,
-                          SizeConfig.safeBlockHorizontal * 3, 0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextDefault(
-                          text: "Personal Information",
-                          color: Colors.black54,
-                          sizeMultiplier: 2.8,
-                          bold: FontWeight.w500,
-                          align: TextAlign.left,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(SizeConfig.safeBlockHorizontal * 3, 0,
-                        SizeConfig.safeBlockHorizontal * 3, 0),
-                    child: SizedBox(
-                      height: SizeConfig.safeBlockVertical * 49,
-                      //sets up scrollable container that displays User info
-                      child: Scrollbar(
-                        controller: scrollController,
-                        thumbVisibility: true,
-
-                        //builds a listTile for each Map in accountInfo(each Map is one piece of data)
-                        child: ListView.builder(
-                          padding: EdgeInsets.all(0),
-                          controller: scrollController,
-                          itemCount: accountInfo.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              //from: "https://stackoverflow.com/questions/55265313/how-to-remove-space-at-top-and-bottom-listtile-flutter" to remove spaces
-                              visualDensity:
-                                  const VisualDensity(horizontal: 0, vertical: -4),
-                              //displays type of data and value of data by accessing map inside accountInfo list
-                              title: TextDefault(
-                                text: accountInfo[index]["title"],
-                                sizeMultiplier: 2.2,
-                                color: Colors.black,
-                                bold: FontWeight.bold,
+                            child: Text(
+                              _initials(UserData.name),
+                              style: GoogleFonts.inter(
+                                fontSize: size.height * 0.038,
+                                fontWeight: FontWeight.bold,
+                                color: _kPrimary,
                               ),
-                              subtitle: TextDefault(
-                                text: accountInfo[index]["subtitle"],
-                                sizeMultiplier: 2.1,
-                                color: Colors.blue[400]!,
-                              ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-
-                  //fills in the rest of the available space
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                       child: PopupMenuButton(
-                        icon: Icon(Icons.settings),
-                        iconSize: SizeConfig.safeBlockVertical * 3.6,
-
-                        //List of buttons inside popUpMenu
-                        itemBuilder: (context) => [
-
-                          //User requests to change their email --> opens dialogBox for new value
-                          PopupMenuItem(
-                            child: TextDefault(
-                              text: "Change Email Address",
-                              sizeMultiplier: 2,
-                              color: Colors.black,
-                            ),
-                            onTap: () {
-                              //delays action to avoid reoccurring glitch where action doesn't execute
-                              Future.delayed(const Duration(seconds: 0), () {
-                                showDialogBox(
-                                    "Please enter your new email and current password",
-                                    authService.changeEmail,
-                                    true);
-                              });
-                            },
+                        const SizedBox(height: 10),
+                        Text(
+                          UserData.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-
-                          //User requests to edit their information --> navigates to another page
-                          PopupMenuItem(
-                            child: TextDefault(
-                              text: "Edit Info",
-                              sizeMultiplier: 2,
-                              color: Colors.black,
-                            ),
-                            onTap: () {
-                              //delays action to avoid reoccurring glitch where action doesn't execute
-                              Future.delayed(Duration(seconds: 0), () {
-                                  editInfo.showEditPopUp(context);
-                              });
-                            },
-                          ),
-
-                          //User requests to visit support page --> navigates to another page
-                          PopupMenuItem(
-                            child: TextDefault(
-                              text: "Support",
-                              sizeMultiplier: 2,
-                              color: Colors.black,
-                            ),
-                            onTap: () {
-                              //delays action to avoid reoccurring glitch where action doesn't execute
-                              Future.delayed(Duration(seconds: 0), () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) => Support(
-                                          dialogBox: false,
-                                          signOutButton: false,
-                                        )));
-                              });
-                            },
-                          ),
-
-                          //signs user out
-                          PopupMenuItem(
-                            child: TextDefault(
-                              text: "Sign Out",
-                              sizeMultiplier: 2,
-                              color: Colors.black,
-                            ),
-                            onTap: () async {
-                              //if this page is on a stack --> pops it so state can return to signIn page
-                              if (canPop) {
-                                Navigator.of(context).pop();
-                              }
-                              await authService.signOut();
-                            },
-                          ),
-
-                          //user requests to delete account --> shows dialogBox for confirmation
-                          PopupMenuItem(
-                            child: TextDefault(
-                              text: "Delete Account",
-                              sizeMultiplier: 2,
-                              color: Colors.black,
-                            ),
-                            onTap: () {
-                              Future.delayed( const Duration(seconds: 0), () {
-                                showDialogBox(
-                                    "Please enter your password to delete your account",
-                                    authService.deleteAccount,
-                                    false);
-                              });
-                            },
+                        ),
+                        if (UserData.gaam.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            UserData.gaam,
+                            style: GoogleFonts.inter(
+                                fontSize: 13, color: Colors.white60),
                           ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+
+            // ── White card ────────────────────────────────────────
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                      size.width * 0.05,
+                      size.height * 0.025,
+                      size.width * 0.05,
+                      100), // bottom pad clears floating nav
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ProfileSection(
+                        title: 'Contact',
+                        icon: Icons.contacts_outlined,
+                        color: _kPrimary,
+                        rows: [
+                          _ProfileRow(label: 'Email', value: UserData.email, icon: Icons.email_outlined, iconColor: _kPrimary),
+                          _ProfileRow(label: 'Phone', value: UserData.phoneNumber, icon: Icons.phone_outlined, iconColor: _kPrimary),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _ProfileSection(
+                        title: 'Location',
+                        icon: Icons.location_on_outlined,
+                        color: const Color(0xFF00897B),
+                        rows: [
+                          _ProfileRow(label: 'Gaam', value: UserData.gaam, icon: Icons.location_city_outlined, iconColor: const Color(0xFF00897B)),
+                          _ProfileRow(label: 'Street', value: UserData.address, icon: Icons.home_outlined, iconColor: const Color(0xFF00897B)),
+                          _ProfileRow(label: 'City', value: UserData.city, icon: Icons.location_on_outlined, iconColor: const Color(0xFF00897B)),
+                          _ProfileRow(label: 'State', value: UserData.state, icon: Icons.map_outlined, iconColor: const Color(0xFF00897B)),
+                          _ProfileRow(label: 'Zip', value: UserData.zip, icon: Icons.pin_drop_outlined, iconColor: const Color(0xFF00897B)),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _ProfileSection(
+                        title: 'Family',
+                        icon: Icons.people_outline,
+                        color: const Color(0xFF7B1FA2),
+                        rows: [
+                          _ProfileRow(label: 'Father', value: UserData.father, icon: Icons.person_outline, iconColor: const Color(0xFF7B1FA2)),
+                          _ProfileRow(label: 'Mother', value: UserData.mother, icon: Icons.person_outline, iconColor: const Color(0xFF7B1FA2)),
+                          if (UserData.spouse.isNotEmpty)
+                            _ProfileRow(label: 'Spouse', value: UserData.spouse, icon: Icons.favorite_outline, iconColor: const Color(0xFFE91E63)),
+                          if (UserData.child1.isNotEmpty)
+                            _ProfileRow(label: 'Child 1', value: UserData.child1, icon: Icons.child_care_outlined, iconColor: const Color(0xFF7B1FA2)),
+                          if (UserData.child2.isNotEmpty)
+                            _ProfileRow(label: 'Child 2', value: UserData.child2, icon: Icons.child_care_outlined, iconColor: const Color(0xFF7B1FA2)),
+                          if (UserData.child3.isNotEmpty)
+                            _ProfileRow(label: 'Child 3', value: UserData.child3, icon: Icons.child_care_outlined, iconColor: const Color(0xFF7B1FA2)),
+                          if (UserData.child4.isNotEmpty)
+                            _ProfileRow(label: 'Child 4', value: UserData.child4, icon: Icons.child_care_outlined, iconColor: const Color(0xFF7B1FA2)),
+                          if (UserData.child5.isNotEmpty)
+                            _ProfileRow(label: 'Child 5', value: UserData.child5, icon: Icons.child_care_outlined, iconColor: const Color(0xFF7B1FA2)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-//CustomClipPath code referenced from: "https://www.developerlibs.com/2019/08/flutter-draw-custom-shaps-clip-path.html"
-class CustomClipPath extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    double w = size.width;
-    double h = size.height;
-    final path = Path();
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-    path.lineTo(0, h - 100);
-    path.quadraticBezierTo(w / 2, h, w, h - 100);
-    path.lineTo(w, 0);
-    path.close();
-    return path;
+PopupMenuItem<String> _menuItem(String value, IconData icon, String label) {
+  return PopupMenuItem(
+    value: value,
+    child: Row(children: [
+      Icon(icon, size: 18, color: Colors.grey[700]),
+      const SizedBox(width: 10),
+      Text(label,
+          style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[800])),
+    ]),
+  );
+}
+
+class _DialogField extends StatelessWidget {
+  final String hint;
+  final IconData? icon;
+  final bool obscure;
+  final ValueChanged<String> onChanged;
+
+  const _DialogField(
+      {required this.hint, this.icon, this.obscure = false, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      obscureText: obscure,
+      maxLines: 1,
+      onChanged: onChanged,
+      style: GoogleFonts.inter(fontSize: 14),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.grey[400]) : null,
+        filled: true,
+        fillColor: const Color(0xFFF7F8FA),
+        contentPadding:
+            const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey[200]!),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF1565C0), width: 1.5),
+        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
+}
+
+String _initials(String name) {
+  final parts = name.trim().split(RegExp(r'\s+'));
+  if (parts.isEmpty || parts[0].isEmpty) return '';
+  if (parts.length == 1) return parts[0][0].toUpperCase();
+  return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+}
+
+class _ProfileSection extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final List<_ProfileRow> rows;
+
+  const _ProfileSection({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.rows,
+  });
 
   @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) {
-    return false;
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(icon, size: 16, color: color),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A1A2E),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F8FA),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              for (int i = 0; i < rows.length; i++) ...[
+                rows[i],
+                if (i < rows.length - 1)
+                  Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Colors.grey[200],
+                      indent: 52,
+                      endIndent: 16),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProfileRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+
+  const _ProfileRow({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final display = value.isEmpty ? '—' : value;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 15, color: iconColor),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              display,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: display == '—'
+                    ? Colors.grey[400]
+                    : const Color(0xFF1A1A2E),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

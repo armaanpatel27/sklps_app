@@ -1,8 +1,29 @@
+// ignore_for_file: prefer_const_constructors
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sklps_app/services/search_helper.dart';
-import 'package:sklps_app/shared/constants.dart';
-import 'package:sklps_app/shared/size_config.dart';
-import '../../../shared/text_formatting.dart';
+import 'package:sklps_app/shared/text_formatting.dart';
+
+const _kPrimary = Color(0xFF1565C0);
+
+const _avatarColors = [
+  Color(0xFF1565C0),
+  Color(0xFF00897B),
+  Color(0xFF7B1FA2),
+  Color(0xFFE65100),
+  Color(0xFF2E7D32),
+  Color(0xFFC62828),
+];
+
+Color _avatarColor(String name) =>
+    _avatarColors[name.isNotEmpty ? name.codeUnitAt(0) % _avatarColors.length : 0];
+
+String _initials(String name) {
+  final parts = name.trim().split(RegExp(r'\s+'));
+  if (parts.isEmpty || parts[0].isEmpty) return '?';
+  if (parts.length == 1) return parts[0][0].toUpperCase();
+  return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+}
 
 class AdminSearch extends StatefulWidget {
   const AdminSearch({Key? key}) : super(key: key);
@@ -12,151 +33,320 @@ class AdminSearch extends StatefulWidget {
 }
 
 class _AdminSearchState extends State<AdminSearch> {
-
-  //function to reset UI
-  void resetUI() {
-    setState(() {});
-
-  }
-
-  //creates instance of class that contains helper methods to perform search
   late SearchHelper adminSearchHelper;
+  final TextEditingController _controller = TextEditingController();
+  String _query = '';
+  String textFieldText = '';
 
-  //on initial state build --> assigns value to adminSearchHelper
-  //prevents resetting instance of adminSearchHelper everytime setState is called
-  //passes setState to adminSearchHelper so helper methods can reset state of this widget
+  void resetUI() => setState(() {});
+
   @override
   void initState() {
     adminSearchHelper = SearchHelper(resetUI: resetUI);
     super.initState();
   }
 
-  //keeps track of text entered into searchBar
-  late String textFieldText;
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onChanged(String text) async {
+    text = text.trim();
+    setState(() => _query = text);
+    if (text.length < 3) {
+      adminSearchHelper.resetState();
+      adminSearchHelper.returnedUsersMap = [];
+      setState(() {});
+    } else {
+      final formatted = TextFormatting().formatEnteredText(text);
+      textFieldText = formatted;
+      await adminSearchHelper.performSearch(formatted, context);
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: SafeArea(
-        bottom: false ,
-        child: Container(
-          height: SizeConfig.safeBlockVertical * 90.5,
-          width: SizeConfig.safeBlockHorizontal * 100,
-          color: Colors.white,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
+    final size = MediaQuery.of(context).size;
 
-              //padding for search bar at top
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                    SizeConfig.safeBlockHorizontal * 5,
-                    SizeConfig.safeBlockVertical * 2,
-                    SizeConfig.safeBlockHorizontal * 5,
-                SizeConfig.safeBlockVertical * 2),
-                //Container for search bar
-                child: Container(
-                  height: SizeConfig.safeBlockVertical * 6,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20.0),
-                    border: Border.all(width: 2.5),
+    return Scaffold(
+      backgroundColor: _kPrimary,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Blue header with search bar ─────────────────────────
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                  size.width * 0.05, size.height * 0.02,
+                  size.width * 0.05, size.height * 0.025),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Members',
+                    style: GoogleFonts.inter(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                  child: Center(
+                  const SizedBox(height: 4),
+                  Text(
+                    'Search by name, gaam, or location',
+                    style: GoogleFonts.inter(
+                        fontSize: 13, color: Colors.white60),
+                  ),
+                  SizedBox(height: size.height * 0.018),
+                  // Search bar
+                  Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     child: TextFormField(
+                      controller: _controller,
                       textAlignVertical: TextAlignVertical.center,
-                      style: TextStyle(
-                        fontSize: SizeConfig.safeBlockVertical * 2.3,
-                        color: Colors.black
-                      ),
+                      style: GoogleFonts.inter(
+                          fontSize: 15, color: Colors.black87),
                       decoration: InputDecoration(
                         border: InputBorder.none,
-                        hintText: "Search name, gaam, location",
-                        prefixIcon: SizedBox(
-                          height: SizeConfig.safeBlockVertical * 2.5,
-                          width: SizeConfig.safeBlockVertical * 2.5,
-                          child: const Icon(
-                            Icons.search,
-                          ),
-                        ),
+                        hintText: 'Search...',
+                        hintStyle: TextStyle(
+                            color: Colors.grey[400], fontSize: 15),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            color: Colors.grey[400], size: 22),
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear,
+                                    color: Colors.grey[400], size: 18),
+                                onPressed: () {
+                                  _controller.clear();
+                                  _onChanged('');
+                                },
+                              )
+                            : null,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 14),
                       ),
-
-                      //executes search and updates UI when user enters text of length > 3
-                      onChanged: (text) async {
-                        text = text.trim();
-
-                        //prevents loading an unnecessary amounts of data
-                        if (text.length < 3) {
-                          //resets search results
-                            adminSearchHelper.resetState();
-                            adminSearchHelper.returnedUsersMap = [];
-                            //updates UI
-                            setState(() {});
-                        } else {
-                          //Capitalizes first letter of every word
-                          String newText = TextFormatting().formatEnteredText(text);
-                          textFieldText = newText;
-
-                          //searches FireStore for users based on user input and stores them in a List
-                            await adminSearchHelper.performSearch(textFieldText, context);
-                            setState(() {});
-                        }
-                      },
+                      onChanged: _onChanged,
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── White results card ──────────────────────────────────
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(28),
+                    topRight: Radius.circular(28),
+                  ),
+                ),
+                child: _buildBody(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    // Idle state
+    if (_query.isEmpty) {
+      return _EmptyState(
+        icon: Icons.people_outline_rounded,
+        title: 'Find a member',
+        subtitle: 'Start typing to search the directory',
+      );
+    }
+
+    // Too short
+    if (_query.length < 3) {
+      return _EmptyState(
+        icon: Icons.search_rounded,
+        title: 'Keep typing…',
+        subtitle: 'Enter at least 3 characters',
+        iconColor: Colors.grey[400]!,
+      );
+    }
+
+    // No results
+    if (adminSearchHelper.returnedUsersMap.isEmpty) {
+      return _EmptyState(
+        icon: Icons.person_search_outlined,
+        title: 'No members found',
+        subtitle: 'Try a different name, gaam, or city',
+        iconColor: Colors.grey[400]!,
+      );
+    }
+
+    // Results
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+      itemCount: adminSearchHelper.returnedUsersMap.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final user = adminSearchHelper.returnedUsersMap[index];
+        return _MemberCard(
+          name: user['name'] ?? '',
+          gaam: user['gaam'] ?? '',
+          city: user['city'] ?? '',
+          onTap: () => adminSearchHelper.showPopUpAdmin(
+              context, index, textFieldText),
+        );
+      },
+    );
+  }
+}
+
+// ── Shared widgets ───────────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color? iconColor;
+
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.iconColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: (iconColor ?? _kPrimary).withOpacity(0.08),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon,
+                size: 40, color: (iconColor ?? _kPrimary).withOpacity(0.7)),
+          ),
+          const SizedBox(height: 16),
+          Text(title,
+              style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A1A2E))),
+          const SizedBox(height: 6),
+          Text(subtitle,
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[500])),
+        ],
+      ),
+    );
+  }
+}
+
+class _MemberCard extends StatelessWidget {
+  final String name;
+  final String gaam;
+  final String city;
+  final VoidCallback onTap;
+
+  const _MemberCard({
+    required this.name,
+    required this.gaam,
+    required this.city,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _avatarColor(name);
+    final location = [gaam, city].where((s) => s.isNotEmpty).join(' · ');
+
+    return Material(
+      color: const Color(0xFFF7F8FA),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: color.withOpacity(0.15),
+                child: Text(
+                  _initials(name),
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: color,
                   ),
                 ),
               ),
+              const SizedBox(width: 14),
               Expanded(
-                child: SizedBox(
-                  width: SizeConfig.safeBlockHorizontal * 92,
-                  //Listview contains displays ListTiles to display user tiles
-                  child: ListView.builder(
-                    //amount of ListTiles = how many user in returnedUsersMap List
-                    itemCount: adminSearchHelper.returnedUsersMap.length,
-                    //builds each ListTile for each user
-                    //index corresponds to index of ListTile and index of user in returnedUsersMap List
-                    itemBuilder: (context, index) => SizedBox(
-                      height: SizeConfig.safeBlockVertical * 13,
-                      //Card contains ListTile
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15.0),
-                          side: const BorderSide(
-                            color: Colors.black,
-                          ),
-                        ),
-                        color: Colors.white,
-                        //InkWell allows ListTile to receive an onTap event
-                        child: InkWell(
-                            child: ListTile(
-                              title: TextDefault(
-                                //accesses name of user and displays it
-                                text: adminSearchHelper.returnedUsersMap[index]["name"],
-                                sizeMultiplier: 2.5,
-                                color: Colors.black,
-                                bold: FontWeight.bold,
-                                align: TextAlign.left,
-                              ),
-                              trailing: TextDefault(
-                                text:
-                                    //access properties("gaam", "city") of user and displays it
-                                    "${adminSearchHelper.returnedUsersMap[index]["gaam"]}\n${adminSearchHelper.returnedUsersMap[index]["city"]}",
-                                sizeMultiplier: 2,
-                                color: Colors.black,
-                                align: TextAlign.right,
-                              ),
-                            ),
-
-                            //shows pop up menu which reveals data about each user and allows for admin to edit
-                            //passes index to match index in returnedUsers list
-                            //passes textFieldText to performSearch again once admin changes are submitted
-                            onTap: () {
-                                adminSearchHelper.showPopUpAdmin(
-                                    context, index, textFieldText);
-                            }),
-
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1A1A2E),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (location.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        location,
+                        style: GoogleFonts.inter(
+                            fontSize: 13, color: Colors.grey[500]),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Admin edit badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _kPrimary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.edit_outlined, size: 13, color: _kPrimary),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Edit',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _kPrimary,
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -166,6 +356,3 @@ class _AdminSearchState extends State<AdminSearch> {
     );
   }
 }
-
-
-

@@ -1,26 +1,25 @@
+// ignore_for_file: prefer_const_constructors
 import "package:flutter/material.dart";
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sklps_app/services/auth.dart';
-import 'package:sklps_app/shared/constants.dart';
 import 'package:sklps_app/shared/custom_dialog_box.dart';
-
+import 'package:url_launcher/url_launcher.dart';
 import '../shared/size_config.dart';
 
+const _kPrimary = Color(0xFF1565C0);
+
 class Support extends StatefulWidget {
-  //whether to display dialogbox
   final bool dialogBox;
-
-  //whether to display signout button or close(Navigator.pop)
   final bool signOutButton;
-
-  //stores dialogBox content
   final String? dialogText;
 
-  const Support(
-      {Key? key,
-      required this.dialogBox,
-      this.dialogText,
-      required this.signOutButton})
-      : super(key: key);
+  const Support({
+    Key? key,
+    required this.dialogBox,
+    this.dialogText,
+    required this.signOutButton,
+  }) : super(key: key);
 
   @override
   State<Support> createState() => _SupportState();
@@ -29,14 +28,11 @@ class Support extends StatefulWidget {
 class _SupportState extends State<Support> {
   CustomDialogBox dialogBox = CustomDialogBox();
 
-  //Once page loads --> call dialog box if needed
   @override
   void initState() {
     super.initState();
     if (widget.dialogBox) {
-      //after frame is called: executed function(prevents error)
       WidgetsBinding.instance!.addPostFrameCallback((_) async {
-        //call customDialogBox
         await dialogBox.showCustomDialogBox(widget.dialogText!, context);
       });
     }
@@ -44,152 +40,297 @@ class _SupportState extends State<Support> {
 
   @override
   Widget build(BuildContext context) {
-    final _auth = AuthService();
-    return Material(
-      child: Container(
-        color: Colors.blue,
-        child: SafeArea(
-          bottom: false,
-          child: Container(
-            color: Colors.white,
-            height: SizeConfig.safeBlockVertical * 100,
-            width: SizeConfig.safeBlockHorizontal * 100,
-            child: Column(
-              children: [
-                //Title of page
-                Container(
-                  decoration:const BoxDecoration(
-                    border: Border(
-                      bottom: const BorderSide(width: 1.0, color: Colors.black),
-                    ),
-                    color: Colors.blue,
-                  ),
-                  height: SizeConfig. safeBlockVertical * 8,
-                  width: SizeConfig.safeBlockHorizontal * 100,
-                  child: Center(
-                    child: TextDefault(
-                      text: "Support",
-                      sizeMultiplier: 6,
-                      color: Colors.white,
-                      bold: FontWeight.bold,
-                      decoration: TextDecoration.none,
+    final auth = AuthService();
+    final size = MediaQuery.of(context).size;
+    SizeConfig().init(context);
+
+    return PopScope(
+      canPop: !widget.signOutButton,
+      child: Scaffold(
+      backgroundColor: _kPrimary,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Blue header ─────────────────────────────────────────
+            SizedBox(
+              height: size.height * 0.24,
+              child: Stack(
+                children: [
+                  if (!widget.signOutButton)
+                  Positioned(
+                    top: 4,
+                    left: 4,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_new,
+                          color: Colors.white70, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
-                ),
-                Center(
-                  child: Container(
-                    height: SizeConfig. safeBlockVertical * 6,
-                    width: SizeConfig.safeBlockHorizontal * 94,
-                    color: Colors.white,
-                    child: TextDefault(
-                      text: "Contact",
-                      color: Colors.black,
-                      sizeMultiplier: 4.5,
-                      bold: FontWeight.w600,
-                      decoration: TextDecoration.underline,
+                  Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            FontAwesomeIcons.headset,
+                            color: Colors.white,
+                            size: 34,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Support',
+                          style: GoogleFonts.inter(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "We're here to help",
+                          style: GoogleFonts.inter(
+                              fontSize: 13, color: Colors.white60),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(SizeConfig.safeBlockHorizontal * 3, 0, SizeConfig.safeBlockHorizontal * 3, 0),
-                  child: Container(
-                    height: SizeConfig. safeBlockVertical * 40,
-                    width: SizeConfig.safeBlockHorizontal * 100,
-                    color: Colors.white,
-                    child: TextDefault(
-                      text: "Contact 1: Armaan Patel "
-                          "\n                  Email: armaan0427@gmail.com"
-                          "\n                  Phone Number: 630-600-1955"
-                          "\n\nContact 2: Chetan Patel "
-                          "\n                   Email: chetan814@gmail.com "
-                          "\n                   Phone Number: 847-800-6543",
-                      color: Colors.black87,
-                      sizeMultiplier: 2.5,
-                    ),
+                ],
+              ),
+            ),
+
+            // ── White card ─────────────────────────────────────────
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(32),
+                    topRight: Radius.circular(32),
                   ),
                 ),
-                const Divider(
-                  thickness: 1.0,
-                  color: Colors.black,
-                ),
-                Center(
-                  child: Container(
-                    height: SizeConfig. safeBlockVertical * 6,
-                    width: SizeConfig.safeBlockHorizontal * 94,
-                    color: Colors.white,
-                    child: TextDefault(
-                      text: "Privacy",
-                      color: Colors.black,
-                      sizeMultiplier: 4.5,
-                      bold: FontWeight.w600,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(SizeConfig.safeBlockHorizontal * 3, 0, SizeConfig.safeBlockHorizontal * 3, 0),
-                  child: Container(
-                    height: SizeConfig. safeBlockVertical * 25,
-                    width: SizeConfig.safeBlockHorizontal * 100,
-                    color: Colors.white,
-                    child: TextDefault(
-                      text: "Your privacy is of the utmost importance. "
-                          "To protect your information, only registered members of the samaj"
-                          " are granted access into the app. Your data can’t be seen by anyone but"
-                          " members of the samaj.",
-                      color: Colors.black87,
-                      sizeMultiplier: 2.5,
-                    ),
-                  ),
-                ),
-                const Divider(
-                  thickness: 1.0,
-                  color: Colors.black,
-                ),
-                //if signOut is true --> show signOut button for auth
-                //else --> show close button for Navigator.pop
-                Expanded(
-                  child: Container(
-                    color: Colors.white,
-                    child: Center(
-                      child: widget.signOutButton
-                          ? ElevatedButton(
-                              child: TextDefault(
-                                text: "Sign Out",
-                                color: Colors.white,
-                                sizeMultiplier: 2.5,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(size.width * 0.06,
+                      size.height * 0.035, size.width * 0.06, size.height * 0.04),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!widget.signOutButton) ...[
+                        // ── Contact ──────────────────────────────────
+                        _SectionLabel(label: 'Get in Touch'),
+                        const SizedBox(height: 12),
+                        _ContactCard(
+                          name: 'Armaan Patel',
+                          email: 'armaan0427@gmail.com',
+                          phone: '630-600-1955',
+                        ),
+                        const SizedBox(height: 10),
+                        _ContactCard(
+                          name: 'Chetan Patel',
+                          email: 'chetan814@gmail.com',
+                          phone: '847-800-6543',
+                        ),
+                        SizedBox(height: size.height * 0.035),
+
+                        // ── Privacy ───────────────────────────────────
+                        _SectionLabel(label: 'Privacy'),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F8FA),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.shield_outlined,
+                                  color: _kPrimary, size: 20),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Your privacy matters. Access is restricted to '
+                                  'registered samaj members only — your data is '
+                                  'never visible to anyone outside the community.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                    height: 1.55,
+                                  ),
+                                ),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                fixedSize: Size(SizeConfig.safeBlockHorizontal * 30,
-                                    SizeConfig.safeBlockVertical * 6),
-                              ),
-                              onPressed: () async {
-                                await _auth.signOut();
-                              },
-                            )
-                          : ElevatedButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: TextDefault(
-                                text: "Close",
-                                color: Colors.white,
-                                sizeMultiplier: 2.5,
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
-                                fixedSize: Size(SizeConfig.safeBlockHorizontal * 30,
-                                    SizeConfig.safeBlockVertical * 6),
-                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      if (widget.signOutButton) ...[
+                        SizedBox(height: size.height * 0.04),
+                        Text(
+                          'Access Restricted',
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF1A1A2E),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your email is not registered in the Samaj database. Please contact an administrator to get access.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                            height: 1.5,
+                          ),
+                        ),
+                        SizedBox(height: size.height * 0.05),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () async => await auth.signOut(),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _kPrimary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                             ),
-                    ),
+                            child: Text(
+                              'Sign Out',
+                              style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-              ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ));
+  }
+}
+
+// ── Shared section label ────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFF1A1A2E),
+        letterSpacing: 0.2,
+      ),
+    );
+  }
+}
+
+// ── Contact card ────────────────────────────────────────────────────────────
+
+class _ContactCard extends StatelessWidget {
+  final String name;
+  final String email;
+  final String phone;
+
+  const _ContactCard(
+      {required this.name, required this.email, required this.phone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F8FA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: _kPrimary.withOpacity(0.1),
+                child: const Icon(Icons.person_outline,
+                    color: _kPrimary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                name,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1A1A2E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _InfoRow(
+            icon: Icons.email_outlined,
+            text: email,
+            onTap: () => launchUrl(Uri(scheme: 'mailto', path: email)),
+          ),
+          const SizedBox(height: 6),
+          _InfoRow(
+            icon: Icons.phone_outlined,
+            text: phone,
+            onTap: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final VoidCallback? onTap;
+  const _InfoRow({required this.icon, required this.text, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: onTap != null ? _kPrimary : Colors.grey[500]),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: onTap != null ? _kPrimary : Colors.grey[600],
+              decoration: onTap != null ? TextDecoration.underline : null,
+              decorationColor: _kPrimary,
             ),
           ),
-        ),
+        ],
       ),
     );
   }
