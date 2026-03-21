@@ -117,7 +117,7 @@ class _VerifyScreenState extends State<VerifyScreen> {
                   return const Support(
                     dialogBox: true,
                     dialogText:
-                        "Sorry, it looks like your information is not in the Samaj database."
+                        "Sorry, it looks like your information is not in the Samaj database. "
                         "For more assistance please see the page down below.",
                     signOutButton: true,
                   );

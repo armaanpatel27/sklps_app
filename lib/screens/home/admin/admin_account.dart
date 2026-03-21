@@ -207,7 +207,6 @@ class _AdminAccountState extends State<AdminAccount> {
                                             signOutButton: false))));
                             break;
                           case 'signout':
-                            if (canPop) Navigator.of(context).pop();
                             authService.signOut();
                             break;
                           case 'delete':

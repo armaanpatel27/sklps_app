@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:sklps_app/models/User.dart';
-import 'package:sklps_app/services/edit_user_info.dart';
+import 'package:sklps_app/screens/home/normal/user_edit_page.dart';
 import 'package:sklps_app/shared/size_config.dart';
 import '../../../services/auth.dart';
 import '../../../services/error_handling.dart';
@@ -168,7 +168,6 @@ class _AccountState extends State<Account> {
     SizeConfig().init(context);
     final size = MediaQuery.of(context).size;
     final authService = Provider.of<AuthService>(context);
-    final EditInfo editInfo = EditInfo(resetUI: resetUI);
     final bool canPop = Navigator.of(context).canPop();
 
     return Scaffold(
@@ -194,8 +193,12 @@ class _AccountState extends State<Account> {
                       onSelected: (value) {
                         switch (value) {
                           case 'edit':
-                            Future.delayed(Duration.zero,
-                                () => editInfo.showEditPopUp(context));
+                            Future.delayed(
+                                Duration.zero,
+                                () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) => UserEditPage(
+                                            resetUI: resetUI))));
                             break;
                           case 'support':
                             Future.delayed(
@@ -207,7 +210,6 @@ class _AccountState extends State<Account> {
                                             signOutButton: false))));
                             break;
                           case 'signout':
-                            if (canPop) Navigator.of(context).pop();
                             authService.signOut();
                             break;
                           case 'delete':
